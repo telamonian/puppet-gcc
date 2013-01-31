@@ -16,7 +16,7 @@ end
 class AppleGcc42 < Formula
   homepage 'http://r.research.att.com/tools/'
   url 'http://r.research.att.com/tools/gcc-42-5666.3-darwin11.pkg'
-  md5 '3ccf46da27aaba17706b420711fb997e'
+  sha1 '8fadde2a159082d6474fe9e325b6301e3c0bc84f'
   version '4.2.1-5666.3-boxen1'
 
 
