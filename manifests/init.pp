@@ -21,13 +21,10 @@ class gcc {
         }
 
         '10.9': {
-          exec { 'brew tap homebrew/versions':
-            creates => "${boxen::config::home}/homebrew/Library/Taps/homebrew-versions",
-            require => Class['homebrew']
-          }
+          ensure_resource('homebrew::tap', 'homebrew/versions', { 'ensure' => 'present' })
 
           package { 'homebrew/versions/gcc48':
-            require => Exec['brew tap homebrew/versions']
+            require => Homebrew::Tap['homebrew/versions']
           }
         }
 

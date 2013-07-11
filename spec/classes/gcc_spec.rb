@@ -1,12 +1,7 @@
 require 'spec_helper'
 
 describe 'gcc' do
-  let(:facts) do
-    {
-      :boxen_home => '/opt/boxen',
-      :boxen_user => 'testuser'
-    }
-  end
+  let(:facts) { default_test_facts }
 
   it do
     should contain_homebrew__formula('apple-gcc42').
