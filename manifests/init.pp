@@ -22,7 +22,8 @@ class gcc {
 
         '10.9': {
           exec { 'brew tap homebrew/versions':
-            creates => "${boxen::config::home}/homebrew/Library/Taps/homebrew-versions"
+            creates => "${boxen::config::home}/homebrew/Library/Taps/homebrew-versions",
+            require => Class['homebrew']
           }
 
           package { 'homebrew/versions/gcc48':
