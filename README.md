@@ -12,5 +12,5 @@ include gcc
 
 * `boxen`
 * `homebrew`
-* `stdlib
+* `stdlib`
 
