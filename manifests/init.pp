@@ -23,8 +23,10 @@ class gcc {
         '10.9': {
           ensure_resource('homebrew::tap', 'homebrew/versions', { 'ensure' => 'present' })
 
-          package { 'homebrew/versions/gcc48':
-            require => Homebrew::Tap['homebrew/versions']
+          homebrew::formula { 'gcc48': }
+
+          package { 'boxen/brews/gcc48':
+            ensure => '4.8.1-boxen1',
           }
         }
 
