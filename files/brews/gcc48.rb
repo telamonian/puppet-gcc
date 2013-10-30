@@ -25,7 +25,7 @@ class Gcc48 < Formula
   url 'ftp://gcc.gnu.org/pub/gcc/releases/gcc-4.8.1/gcc-4.8.1.tar.bz2'
   sha1 '4e655032cda30e1928fcc3f00962f4238b502169'
 
-  version "4.8.1-boxen1"
+  version "4.8.1"
 
   option 'enable-fortran', 'Build the gfortran compiler'
   option 'enable-java', 'Build the gcj compiler'
