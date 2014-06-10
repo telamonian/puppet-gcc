@@ -11,13 +11,7 @@ class gcc {
 
       case $::macosx_productversion_major {
         '10.8': {
-          homebrew::formula { 'apple-gcc42':
-            before => Package['boxen/brews/apple-gcc42'],
-          }
-
-          package { 'boxen/brews/apple-gcc42':
-            ensure => '4.2.1-5666.3-boxen1'
-          }
+          require gcc::gcc_42
         }
 
         '10.9': {
