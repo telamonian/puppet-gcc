@@ -11,14 +11,17 @@ class gcc {
 
       case $::macosx_productversion_major {
         '10.8': {
-          require gcc::gcc_42
+          include gcc::apple_gcc42
         }
 
         '10.9': {
-          ensure_resource('homebrew::tap', 'homebrew/versions', { 'ensure' => 'present' })
+          ensure_resource('homebrew::tap',
+            'homebrew/versions', { 'ensure' => 'present' })
 
-          package { 'homebrew/versions/gcc48':
-            require => Homebrew::Tap['homebrew/versions']
+          homebrew::formula { 'gcc48': }
+
+          package { 'boxen/brews/gcc48':
+            ensure => '4.8.1',
           }
         }
 
