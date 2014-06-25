@@ -22,19 +22,26 @@ class Gcc48 < Formula
   end
 
   homepage 'http://gcc.gnu.org'
-  url 'ftp://gcc.gnu.org/pub/gcc/releases/gcc-4.8.1/gcc-4.8.1.tar.bz2'
-  sha1 '4e655032cda30e1928fcc3f00962f4238b502169'
+  url 'http://ftpmirror.gnu.org/gcc/gcc-4.8.3/gcc-4.8.3.tar.bz2'
+  mirror 'ftp://gcc.gnu.org/pub/gcc/releases/gcc-4.8.3/gcc-4.8.3.tar.bz2'
+  sha1 'da0a2b9ec074f2bf624a34f3507f812ebb6e4dce'
+  version '4.8.3-boxen1'
 
-  version "4.8.1"
+  bottle do
+    sha1 '97867c4e70e4eeaf98d42ad06a23a189abec3cc7' => :tiger_g3
+    sha1 'ddda3f3dae94812ef263a57fd2abe85bf97c3ca0' => :tiger_altivec
+    sha1 '3a01572c16a8bcde4fb53554790b350c31161309' => :tiger_g4e
+    sha1 '063016966578350a6048e22b45e468c3dc991619' => :leopard_g3
+    sha1 '16a24c342514a4917533c172cddbfb3156153adc' => :leopard_altivec
+  end
 
   option 'enable-fortran', 'Build the gfortran compiler'
   option 'enable-java', 'Build the gcj compiler'
-  option 'enable-objc', 'Enable Objective-C language support'
-  option 'enable-objcxx', 'Enable Objective-C++ language support'
   option 'enable-all-languages', 'Enable all compilers and languages, except Ada'
   option 'enable-nls', 'Build with native language support (localization)'
   option 'enable-profiled-build', 'Make use of profile guided optimization when bootstrapping GCC'
-  option 'enable-multilib', 'Build with multilib support'
+  # enabling multilib on a host that can't run 64-bit results in build failures
+  option 'disable-multilib', 'Build without multilib support' if MacOS.prefer_64_bit?
 
   depends_on 'gmp4'
   depends_on 'libmpc08'
@@ -43,25 +50,27 @@ class Gcc48 < Formula
   depends_on 'isl011'
   depends_on 'ecj' if build.include? 'enable-java' or build.include? 'enable-all-languages'
 
-  # The as that comes with Tiger isn't capable of dealing with the
-  # PPC asm that comes in libitm
-  depends_on 'cctools' => :build if MacOS.version < :leopard
+  if MacOS.version < :leopard
+    # The as that comes with Tiger isn't capable of dealing with the
+    # PPC asm that comes in libitm
+    depends_on 'cctools' => :build
+    # GCC 4.8.1 incorrectly determines that _Unwind_GetIPInfo is available on
+    # Tiger, resulting in a failed build
+    # Fixed upstream: http://gcc.gnu.org/bugzilla/show_bug.cgi?id=58710
+    patch :DATA
+  end
 
   fails_with :gcc_4_0
 
-  # GCC 4.8.1 incorrectly determines that _Unwind_GetIPInfo is available on
-  # Tiger, resulting in a failed build
-  # Reported upstream: http://gcc.gnu.org/bugzilla/show_bug.cgi?id=58710
-  def patches; DATA; end if MacOS.version < :leopard
-
   def install
+    # GCC bootstraps itself, so it is OK to have an incompatible C++ stdlib
+    cxxstdlib_check :skip
+
     # GCC will suffer build errors if forced to use a particular linker.
     ENV.delete 'LD'
 
     if MacOS.version < :leopard
-      as = Formula.factory('cctools').bin/'as'
-      ENV['AS'] = as
-      ENV['AS_FOR_TARGET'] = as
+      ENV["AS"] = ENV["AS_FOR_TARGET"] = "#{Formula["cctools"].bin}/as"
     end
 
     if build.include? 'enable-all-languages'
@@ -70,46 +79,40 @@ class Gcc48 < Formula
       # currently only compilable on Linux.
       languages = %w[c c++ fortran java objc obj-c++]
     else
-      # The C compiler is always built, but additional defaults can be added
-      # here.
-      languages = %w[c c++]
+      # C, C++, ObjC compilers are always built
+      languages = %w[c c++ objc obj-c++]
 
       languages << 'fortran' if build.include? 'enable-fortran'
       languages << 'java' if build.include? 'enable-java'
-      languages << 'objc' if build.include? 'enable-objc'
-      languages << 'obj-c++' if build.include? 'enable-objcxx'
     end
 
-    # Sandbox the GCC lib, libexec and include directories so they don't wander
-    # around telling small children there is no Santa Claus. This results in a
-    # partially keg-only brew following suggestions outlined in the "How to
-    # install multiple versions of GCC" section of the GCC FAQ:
-    #     http://gcc.gnu.org/faq.html#multiple
-    gcc_prefix = prefix + 'gcc'
+    version_suffix = version.to_s.slice(/\d\.\d/)
 
     args = [
       "--build=#{arch}-apple-darwin#{osmajor}",
-      # Sandbox everything...
-      "--prefix=#{gcc_prefix}",
-      # ...except the stuff in share...
-      "--datarootdir=#{share}",
-      # ...and the binaries...
-      "--bindir=#{bin}",
-      # ...which are tagged with a suffix to distinguish them.
+      "--prefix=#{prefix}",
       "--enable-languages=#{languages.join(',')}",
-      "--program-suffix=-#{version.to_s.slice(/\d\.\d/)}",
-      "--with-gmp=#{Formula.factory('gmp4').opt_prefix}",
-      "--with-mpfr=#{Formula.factory('mpfr2').opt_prefix}",
-      "--with-mpc=#{Formula.factory('libmpc08').opt_prefix}",
-      "--with-cloog=#{Formula.factory('cloog018').opt_prefix}",
-      "--with-isl=#{Formula.factory('isl011').opt_prefix}",
+      # Make most executables versioned to avoid conflicts.
+      "--program-suffix=-#{version_suffix}",
+      "--with-gmp=#{Formula["gmp4"].opt_prefix}",
+      "--with-mpfr=#{Formula["mpfr2"].opt_prefix}",
+      "--with-mpc=#{Formula["libmpc08"].opt_prefix}",
+      "--with-cloog=#{Formula["cloog018"].opt_prefix}",
+      "--with-isl=#{Formula["isl011"].opt_prefix}",
       "--with-system-zlib",
+      # This ensures lib, libexec, include are sandboxed so that they
+      # don't wander around telling little children there is no Santa
+      # Claus.
+      "--enable-version-specific-runtime-libs",
       "--enable-libstdcxx-time=yes",
       "--enable-stage1-checking",
       "--enable-checking=release",
       "--enable-lto",
-      # a no-op unless --HEAD is built because in head warnings will raise errs.
-      "--disable-werror"
+      # A no-op unless --HEAD is built because in head warnings will
+      # raise errors. But still a good idea to include.
+      "--disable-werror",
+      "--with-pkgversion=Homebrew #{name} #{pkg_version} #{build.used_options*" "}".strip,
+      "--with-bugurl=https://github.com/Homebrew/homebrew-versions/issues",
     ]
 
     # "Building GCC with plugin support requires a host that supports
@@ -123,13 +126,13 @@ class Gcc48 < Formula
     args << '--disable-nls' unless build.include? 'enable-nls'
 
     if build.include? 'enable-java' or build.include? 'enable-all-languages'
-      args << "--with-ecj-jar=#{Formula.factory('ecj').opt_prefix}/share/java/ecj.jar"
+      args << "--with-ecj-jar=#{Formula["ecj"].opt_prefix}/share/java/ecj.jar"
     end
 
-    if build.include? 'enable-multilib'
-      args << '--enable-multilib'
-    else
+    if !MacOS.prefer_64_bit? || build.include?('disable-multilib')
       args << '--disable-multilib'
+    else
+      args << '--enable-multilib'
     end
 
     mkdir 'build' do
@@ -154,10 +157,42 @@ class Gcc48 < Formula
       # deja-gnu and autogen formulae must be installed in order to do this.
 
       system 'make install'
-
-      # Remove conflicting manpages in man7
-      man7.rmtree
     end
+
+    # Handle conflicts between GCC formulae
+
+    # Since GCC 4.8 libffi stuff are no longer shipped.
+
+    # Rename libiberty.a.
+    Dir.glob(prefix/"**/libiberty.*") { |file| add_suffix file, version_suffix }
+
+    # Rename man7.
+    Dir.glob(man7/"*.7") { |file| add_suffix file, version_suffix }
+
+    # Even when suffixes are appended, the info pages conflict when
+    # install-info is run. TODO fix this.
+    info.rmtree
+
+    # Rename java properties
+    if build.include? 'enable-java' or build.include? 'enable-all-languages'
+      config_files = [
+        "#{lib}/logging.properties",
+        "#{lib}/security/classpath.security",
+        "#{lib}/i386/logging.properties",
+        "#{lib}/i386/security/classpath.security"
+      ]
+
+      config_files.each do |file|
+        add_suffix file, version_suffix if File.exist? file
+      end
+    end
+  end
+
+  def add_suffix file, suffix
+    dir = File.dirname(file)
+    ext = File.extname(file)
+    base = File.basename(file, ext)
+    File.rename file, "#{dir}/#{base}-#{suffix}#{ext}"
   end
 end
 
@@ -169,7 +204,7 @@ index 428f53a..a165197 100644
 @@ -35,6 +35,14 @@ POSSIBILITY OF SUCH DAMAGE.  */
  #include "unwind.h"
  #include "backtrace.h"
-
+ 
 +#ifdef __APPLE__
 +/* On MacOS X, versions older than 10.5 don't export _Unwind_GetIPInfo.  */
 +#undef HAVE_GETIPINFO
@@ -179,7 +214,7 @@ index 428f53a..a165197 100644
 +#endif
 +
  /* The main backtrace_full routine.  */
-
+ 
  /* Data passed through _Unwind_Backtrace.  */
 diff --git a/libbacktrace/simple.c b/libbacktrace/simple.c
 index b03f039..9f3a945 100644
@@ -188,7 +223,7 @@ index b03f039..9f3a945 100644
 @@ -35,6 +35,14 @@ POSSIBILITY OF SUCH DAMAGE.  */
  #include "unwind.h"
  #include "backtrace.h"
-
+ 
 +#ifdef __APPLE__
 +/* On MacOS X, versions older than 10.5 don't export _Unwind_GetIPInfo.  */
 +#undef HAVE_GETIPINFO
@@ -198,7 +233,7 @@ index b03f039..9f3a945 100644
 +#endif
 +
  /* The simple_backtrace routine.  */
-
+ 
  /* Data passed through _Unwind_Backtrace.  */
 diff --git a/libgcc/unwind-c.c b/libgcc/unwind-c.c
 index b937d9d..1121dce 100644
@@ -207,7 +242,7 @@ index b937d9d..1121dce 100644
 @@ -30,6 +30,14 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
  #define NO_SIZE_OF_ENCODED_VALUE
  #include "unwind-pe.h"
-
+ 
 +#ifdef __APPLE__
 +/* On MacOS X, versions older than 10.5 don't export _Unwind_GetIPInfo.  */
 +#undef HAVE_GETIPINFO
@@ -225,8 +260,8 @@ index 3b58118..9a00066 100644
 +++ b/libgfortran/runtime/backtrace.c
 @@ -40,6 +40,14 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
  #include "unwind.h"
-
-
+ 
+ 
 +#ifdef __APPLE__
 +/* On MacOS X, versions older than 10.5 don't export _Unwind_GetIPInfo.  */
 +#undef HAVE_GETIPINFO
@@ -245,7 +280,7 @@ index c669a3c..9e848db 100644
 @@ -18,6 +18,14 @@
  #include "go-defer.h"
  #include "go-panic.h"
-
+ 
 +#ifdef __APPLE__
 +/* On MacOS X, versions older than 10.5 don't export _Unwind_GetIPInfo.  */
 +#undef HAVE_GETIPINFO
@@ -255,7 +290,7 @@ index c669a3c..9e848db 100644
 +#endif
 +
  /* The code for a Go exception.  */
-
+ 
  #ifdef __ARM_EABI_UNWINDER__
 diff --git a/libobjc/exception.c b/libobjc/exception.c
 index 4b05611..8ff70f9 100644
@@ -264,7 +299,7 @@ index 4b05611..8ff70f9 100644
 @@ -31,6 +31,14 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
  #include "unwind-pe.h"
  #include <string.h> /* For memcpy */
-
+ 
 +#ifdef __APPLE__
 +/* On MacOS X, versions older than 10.5 don't export _Unwind_GetIPInfo.  */
 +#undef HAVE_GETIPINFO
