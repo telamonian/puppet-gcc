@@ -1,6 +1,6 @@
 require "formula"
 
-class Gcc48 < Formula
+class Gcc < Formula
   def arch
     if Hardware::CPU.type == :intel
       if MacOS.prefer_64_bit?
