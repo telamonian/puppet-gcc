@@ -44,11 +44,11 @@ class Gcc48 < Formula
   # enabling multilib on a host that can't run 64-bit results in build failures
   option "without-multilib", "Build without multilib support" if MacOS.prefer_64_bit?
 
-  depends_on "gmp"
-  depends_on "libmpc"
-  depends_on "mpfr"
-  depends_on "cloog"
-  depends_on "isl"
+  depends_on 'gmp4'
+  depends_on 'libmpc08'
+  depends_on 'mpfr2'
+  depends_on 'cloog018'
+  depends_on 'isl011'
   depends_on "ecj" if build.with?("java") || build.with?("all-languages")
 
   if MacOS.version < :leopard
@@ -73,9 +73,6 @@ class Gcc48 < Formula
   end
 
   def install
-    # GCC bootstraps itself, so it is OK to have an incompatible C++ stdlib
-    cxxstdlib_check :skip
-
     # GCC will suffer build errors if forced to use a particular linker.
     ENV.delete "LD"
 
@@ -220,13 +217,6 @@ class Gcc48 < Formula
       assert_equal "done", `./test`.strip
     end
   end
-
-  def add_suffix file, suffix
-    dir = File.dirname(file)
-    ext = File.extname(file)
-    base = File.basename(file, ext)
-    File.rename file, "#{dir}/#{base}-#{suffix}#{ext}"
-  end
 end
 
 __END__
@@ -237,7 +227,7 @@ index 428f53a..a165197 100644
 @@ -35,6 +35,14 @@ POSSIBILITY OF SUCH DAMAGE.  */
  #include "unwind.h"
  #include "backtrace.h"
- 
+
 +#ifdef __APPLE__
 +/* On MacOS X, versions older than 10.5 don't export _Unwind_GetIPInfo.  */
 +#undef HAVE_GETIPINFO
@@ -247,7 +237,7 @@ index 428f53a..a165197 100644
 +#endif
 +
  /* The main backtrace_full routine.  */
- 
+
  /* Data passed through _Unwind_Backtrace.  */
 diff --git a/libbacktrace/simple.c b/libbacktrace/simple.c
 index b03f039..9f3a945 100644
@@ -256,7 +246,7 @@ index b03f039..9f3a945 100644
 @@ -35,6 +35,14 @@ POSSIBILITY OF SUCH DAMAGE.  */
  #include "unwind.h"
  #include "backtrace.h"
- 
+
 +#ifdef __APPLE__
 +/* On MacOS X, versions older than 10.5 don't export _Unwind_GetIPInfo.  */
 +#undef HAVE_GETIPINFO
@@ -266,7 +256,7 @@ index b03f039..9f3a945 100644
 +#endif
 +
  /* The simple_backtrace routine.  */
- 
+
  /* Data passed through _Unwind_Backtrace.  */
 diff --git a/libgcc/unwind-c.c b/libgcc/unwind-c.c
 index b937d9d..1121dce 100644
@@ -275,7 +265,7 @@ index b937d9d..1121dce 100644
 @@ -30,6 +30,14 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
  #define NO_SIZE_OF_ENCODED_VALUE
  #include "unwind-pe.h"
- 
+
 +#ifdef __APPLE__
 +/* On MacOS X, versions older than 10.5 don't export _Unwind_GetIPInfo.  */
 +#undef HAVE_GETIPINFO
@@ -293,8 +283,8 @@ index 3b58118..9a00066 100644
 +++ b/libgfortran/runtime/backtrace.c
 @@ -40,6 +40,14 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
  #include "unwind.h"
- 
- 
+
+
 +#ifdef __APPLE__
 +/* On MacOS X, versions older than 10.5 don't export _Unwind_GetIPInfo.  */
 +#undef HAVE_GETIPINFO
@@ -313,7 +303,7 @@ index c669a3c..9e848db 100644
 @@ -18,6 +18,14 @@
  #include "go-defer.h"
  #include "go-panic.h"
- 
+
 +#ifdef __APPLE__
 +/* On MacOS X, versions older than 10.5 don't export _Unwind_GetIPInfo.  */
 +#undef HAVE_GETIPINFO
@@ -323,7 +313,7 @@ index c669a3c..9e848db 100644
 +#endif
 +
  /* The code for a Go exception.  */
- 
+
  #ifdef __ARM_EABI_UNWINDER__
 diff --git a/libobjc/exception.c b/libobjc/exception.c
 index 4b05611..8ff70f9 100644
@@ -332,7 +322,7 @@ index 4b05611..8ff70f9 100644
 @@ -31,6 +31,14 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
  #include "unwind-pe.h"
  #include <string.h> /* For memcpy */
- 
+
 +#ifdef __APPLE__
 +/* On MacOS X, versions older than 10.5 don't export _Unwind_GetIPInfo.  */
 +#undef HAVE_GETIPINFO
