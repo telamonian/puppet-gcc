@@ -1,6 +1,6 @@
 # GCC Puppet Module for Boxen
 
-[![Build Status](https://travis-ci.org/boxen/puppet-gcc.png?branch=master)](https://travis-ci.org/boxen/puppet-gcc)
+[![Build Status](https://travis-ci.org/boxen/puppet-gcc.svg?branch=master)](https://travis-ci.org/boxen/puppet-gcc)
 
 ## Usage
 
