@@ -2,25 +2,21 @@ require 'formula'
 
 class Gcc48 < Formula
   def arch
-    if /darwin/ =~ RUBY_PLATFORM
-      if Hardware::CPU.type == :intel
-        if MacOS.prefer_64_bit?
-          'x86_64'
-        else
-          'i686'
-        end
-      elsif Hardware::CPU.type == :ppc
-        if MacOS.prefer_64_bit?
-          'powerpc64'
-        else
-          'powerpc'
-        end
-     end
-    end
-    if /debian/ =~ RUBY_PLATFORM
-      'x86_64' 
+    if Hardware::CPU.type == :intel
+      if MacOS.prefer_64_bit?
+        'x86_64'
+      else
+        'i686'
+      end
+    elsif Hardware::CPU.type == :ppc
+      if MacOS.prefer_64_bit?
+        'powerpc64'
+      else
+        'powerpc'
+      end
     end
   end
+
   def osmajor
     `uname -r`.chomp
   end
@@ -49,23 +45,14 @@ class Gcc48 < Formula
   # enabling multilib on a host that can't run 64-bit results in build failures
   option 'disable-multilib', 'Build without multilib support' if MacOS.prefer_64_bit?
 
-  if /darwin/ =~ RUBY_PLATFORM
-    depends_on 'gmp4'
-    depends_on 'libmpc08'
-    depends_on 'mpfr2'
-    depends_on 'cloog018'
-    depends_on 'isl011'
-    depends_on 'ecj' if build.include? 'enable-java' or build.include? 'enable-all-languages'
-  else
-    depends_on 'gmp'
-    depends_on 'libmpc'
-    depends_on 'mpfr'
-    depends_on 'cloog'
-    depends_on 'isl'
-    depends_on 'ecj' if build.include? 'enable-java' or build.include? 'enable-all-languages'
-  end
+  depends_on 'gmp4'
+  depends_on 'libmpc08'
+  depends_on 'mpfr2'
+  depends_on 'cloog018'
+  depends_on 'isl011'
+  depends_on 'ecj' if build.include? 'enable-java' or build.include? 'enable-all-languages'
 
-  if (/darwin/ =~ RUBY_PLATFORM && (MacOS.version < :leopard))
+  if MacOS.version < :leopard
     # The as that comes with Tiger isn't capable of dealing with the
     # PPC asm that comes in libitm
     depends_on 'cctools' => :build
@@ -84,7 +71,7 @@ class Gcc48 < Formula
     # GCC will suffer build errors if forced to use a particular linker.
     ENV.delete 'LD'
 
-    if (/darwin/ =~ RUBY_PLATFORM && (MacOS.version < :leopard))
+    if MacOS.version < :leopard
       ENV["AS"] = ENV["AS_FOR_TARGET"] = "#{Formula["cctools"].bin}/as"
     end
 
